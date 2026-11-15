@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+# large intermediates: regenerate with the commands in demos/README.md
+demos/out/*.mov
+demos/out/*.wav
+demos/out/04-p5-generative.mp4
