@@ -52,7 +52,9 @@ Rules that make it look professional:
 | Things that fall, bounce, stack, collide | matter-js | `matter-physics` |
 | A number or trend that must be believed | D3 | `d3-data-stories` |
 | Music, impacts, anything that must hit a beat, audio-reactive visuals | Tone.js | `tonejs-soundtrack` |
-| Photoreal footage, talking head, 3D product model, generated music | AI models (GPU) | `ai-generated-assets` |
+| A product or device in 3D, turntable, camera fly-around, 3D logo | three.js | `threejs-3d` |
+| A photoreal hero still or short ray-traced shot | Blender (headless) | `blender-render` |
+| Photoreal footage, talking head, image-to-3D model, generated music | AI models (GPU) | `ai-generated-assets` |
 
 When in doubt use anime.js: it covers roughly 70% of launch-clip shots. Reach for the others only for what they are uniquely good at. Mixing engines inside one scene is fine (DOM title over a canvas).
 

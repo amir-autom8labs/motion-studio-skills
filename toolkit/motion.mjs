@@ -394,7 +394,7 @@ async function cmdDoctor() {
   const ok = (b, m) => console.log(`${b ? 'ok  ' : 'FAIL'} ${m}`);
   let good = true;
   ok(+process.versions.node.split('.')[0] >= 20, `node ${process.versions.node}`);
-  for (const m of ['esbuild', 'animejs', 'pixi.js', 'p5', 'matter-js', 'd3', 'tone', 'react', '@react-spring/web']) {
+  for (const m of ['esbuild', 'animejs', 'pixi.js', 'p5', 'matter-js', 'd3', 'tone', 'react', '@react-spring/web', 'three']) {
     let has = fs.existsSync(path.join(HERE, 'node_modules', m)); good &&= has; ok(has, `${m}${has ? '' : `   -> npm ci --prefix "${HERE}"`}`);
   }
   let pw = null; try { pw = require('playwright'); } catch {}

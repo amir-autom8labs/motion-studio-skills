@@ -13,6 +13,8 @@ Each folder is one scene exercising one engine. Outputs are in `out/`, contact s
 | 07-tone-audio-reactive | Tone.js | Code-composed track driving the visuals | `out/07-tone-audio-reactive.mp4` (has audio) |
 | 08-alpha-lower-third | anime.js | Transparent overlay composited on the p5 plate | `out/08-overlay-on-plate.mp4` |
 | 09-launch-reel | concat + Tone.js | Five clips, crossfades, one soundtrack | `out/09-launch-reel.mp4` (32 s, has audio) |
+| 10-three-product-spin | three.js | Device mockup with UI on screen, camera dolly, DOM title | `out/10-three-product-spin.mp4` |
+| 11-blender-hero | Blender (bpy, Cycles) | Ray-traced hero still + draft turntable | `out/11-blender-hero.png`, `out/11-blender-turntable-draft.mp4` |
 
 Regenerate everything:
 
@@ -30,4 +32,10 @@ node toolkit/motion.mjs render demos/08-alpha-lower-third/scene.js --transparent
 
 ```bash
 bash demos/09-launch-reel/build.sh
+```
+
+Blender demo (needs `pip install bpy` in a venv):
+
+```bash
+python demos/11-blender-hero/render.py --quality final --frames 18 --out demos/11-blender-hero/out/hero_
 ```

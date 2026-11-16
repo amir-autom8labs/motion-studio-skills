@@ -14,7 +14,7 @@ $MOTION sheet  scene.js -o sheet.png --count 8        # contact sheet — look a
 $MOTION render scene.js -o out.mp4                     # final
 ```
 
-If `doctor` reports missing packages run `npm ci --prefix ${CLAUDE_PLUGIN_ROOT}/toolkit`. Scene files can live anywhere (put them in the user's project); bare imports of `animejs`, `pixi.js`, `p5`, `matter-js`, `d3`, `tone`, `react`, `@react-spring/web` and `motion-kit` resolve to the toolkit's copies.
+If `doctor` reports missing packages run `npm ci --prefix ${CLAUDE_PLUGIN_ROOT}/toolkit`. Scene files can live anywhere (put them in the user's project); bare imports of `animejs`, `pixi.js`, `p5`, `matter-js`, `d3`, `tone`, `three`, `react`, `@react-spring/web` and `motion-kit` resolve to the toolkit's copies.
 
 ## Scene contract
 

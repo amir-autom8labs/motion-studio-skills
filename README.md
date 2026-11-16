@@ -3,8 +3,8 @@
 A Claude Code plugin for producing motion clips — product launch videos, social posts, capability demos — from code. It ships:
 
 - **`toolkit/`** — `motion`, a headless renderer that turns any JavaScript animation into frame-perfect MP4 / WebM / GIF / ProRes-with-alpha, with Tone.js audio mixed in.
-- **`skills/`** — ten skills that teach Claude how to plan a clip, pick the right engine per shot, avoid the defects we hit, and review its own work.
-- **`demos/`** — nine working scenes with rendered output; the skills use them as templates.
+- **`skills/`** — twelve skills that teach Claude how to plan a clip, pick the right engine per shot, avoid the defects we hit, and review its own work.
+- **`demos/`** — eleven working scenes with rendered output; the skills use them as templates.
 - **`docs/PRIORITIES.md`** — how the 14 candidate packages were ranked and what the demos taught us.
 
 ## Install
@@ -38,6 +38,8 @@ npm ci --prefix <plugin-root>/toolkit
 | `matter-physics` | Falling, stacking, colliding objects |
 | `d3-data-stories` | Animated charts and counting numbers |
 | `tonejs-soundtrack` | Music, impacts, beat sync, audio-reactive visuals |
+| `threejs-3d` | 3D product/device mockups, turntables, camera moves, GLB models |
+| `blender-render` | Photoreal ray-traced hero stills and short shots with headless Blender |
 | `ai-generated-assets` | Integrating LTX-2, LivePortrait, TRELLIS/Hunyuan3D, MusicGen, RIFE — with licence limits |
 
 ## Try it without the plugin
@@ -55,4 +57,7 @@ node toolkit/motion.mjs render demos/01-anime-launch-title/scene.js -o title.mp4
 - Everything in `skills/` except `ai-generated-assets` was exercised on a 4-core, GPU-less Linux machine; the demo outputs in `demos/out/` are those renders.
 - The AI models (LTX-2, LivePortrait, Hunyuan3D-2, TRELLIS, MusicGen, RIFE) were **not run**. That skill documents GPU needs, licence limits read from each repo, and how their outputs plug into the pipeline.
 - The soundtrack was verified by level meters and waveform only — it has not been listened to.
-- The plugin install path has not been tested with `claude plugin install`; the manifest follows the documented layout.
+- Install was tested from a local checkout (`claude plugin marketplace add ./` then `claude plugin install`): all twelve skills load. Skill triggering in a live session has not been evaluated.
+- No LICENSE file yet — choose one before listing the plugin publicly.
+- Blender was run on CPU only: stills and draft sequences are practical there, full-quality shots need a GPU (see `blender-render`).
+- HyperFrames (HeyGen's HTML-to-video framework) overlaps with the renderer here; see `docs/HYPERFRAMES.md` for how the two fit together.

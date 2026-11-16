@@ -18,6 +18,17 @@ Tier 1 packages were all exercised end to end on a 4-core machine with no GPU â€
 
 Ranking logic: anime.js and Tone.js are first because they are needed in nearly every clip. D3 is third because data shots have no substitute. PixiJS, react-spring and matter-js each do one thing the others can't. p5.js is last in the tier: beautiful, but slowest to render, largest files, and only ever a background.
 
+## Added after the first round: 3D
+
+None of the 14 candidates covers 3D modelling and rendering directly (TRELLIS and Hunyuan3D only *generate* meshes). Two additions fill the gap, both exercised here without a GPU:
+
+| Package | Role | Measured | Demo |
+|---|---|---|---|
+| **three.js** (MIT) | Everyday 3D: device mockups, turntables, 3D logos, GLB models; runs in the same renderer | ~3 frames/s at 1080p | 10 |
+| **Blender / bpy** (GPL) | Photoreal ray-traced hero stills and short shots | draft frame ~3 s; full-quality 1080p frame ~80 s on CPU | 11 |
+
+Blender is GPL: using it to render is unrestricted, but scripts that import `bpy` are GPL if distributed.
+
 ## Tier 2 â€” AI generation, GPU required, not verified here
 
 | # | Package | Value | Blocker |

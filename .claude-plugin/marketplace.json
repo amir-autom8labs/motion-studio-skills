@@ -1,11 +1,15 @@
 {
   "name": "motion-studio-skills",
-  "owner": { "name": "autom8labs" },
+  "description": "Motion Studio: skills and a headless renderer for producing launch videos, social clips and product demos from code.",
+  "owner": {
+    "name": "autom8labs"
+  },
   "plugins": [
     {
       "name": "motion-studio",
       "source": "./",
-      "description": "Skills and a headless renderer for producing launch videos, social clips and product demos from code."
+      "description": "Skills and a headless renderer for producing launch videos, social clips and product demos from code.",
+      "version": "0.1.0"
     }
   ]
 }

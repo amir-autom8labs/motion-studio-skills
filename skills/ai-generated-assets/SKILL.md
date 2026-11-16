@@ -28,7 +28,7 @@ Licence facts were read from each repo's LICENSE/README; model-card pages could 
   `ffmpeg -i plate.mp4 -i overlay.mov -filter_complex "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,fps=30[b];[b][1:v]overlay=shortest=1" -c:v libx264 -crf 18 -pix_fmt yuv420p out.mp4`.
   Or cut it between coded shots with `motion concat` (it conforms size and frame rate to the first clip).
 - **Music (MusicGen or any file)** → `motion render scene.js --audio track.wav`. The scene receives `audio.level` / `audio.bass` per frame, so visuals can react to it.
-- **3D (Hunyuan3D-2, TRELLIS)** → export `.glb`, put it in the scene folder, load with three.js (`npm i --prefix ${CLAUDE_PLUGIN_ROOT}/toolkit three`) inside a scene: create the renderer with `preserveDrawingBuffer: true`, set camera/rotation from `t` in the per-frame function, call `renderer.render()` there. Software WebGL is slow; use `workers: 2`.
+- **3D (Hunyuan3D-2, TRELLIS)** → export `.glb`, put it in the scene folder, then animate it with the `threejs-3d` skill (`GLTFLoader`) or light and ray-trace it with `blender-render`. Generated meshes usually need their scale, origin and materials fixed first.
 - **RIFE** → only for footage. Coded scenes don't need it: render at `--fps 60` directly, and for slow motion render the scene with a longer duration. For AI or camera footage without a GPU, ffmpeg's motion interpolation is a usable fallback: `ffmpeg -i in.mp4 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:vsbmf=1" out.mp4` (slow, artefacts on fast motion).
 
 ## Prompting generated footage so it cuts with coded shots

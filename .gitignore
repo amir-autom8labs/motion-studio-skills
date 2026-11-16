@@ -5,3 +5,5 @@ node_modules/
 demos/out/*.mov
 demos/out/*.wav
 demos/out/04-p5-generative.mp4
+demos/11-blender-hero/out/
+.blender/

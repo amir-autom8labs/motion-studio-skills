@@ -1,6 +1,16 @@
 {
   "name": "motion-studio",
-  "description": "Create motion clips for product launches, social media and capability demos: code-driven animation (anime.js, react-spring, PixiJS, p5.js, matter-js, D3) with Tone.js soundtracks, rendered deterministically to MP4/WebM/GIF/ProRes.",
-  "author": { "name": "autom8labs" },
-  "keywords": ["motion-graphics", "video", "animation", "product-launch", "social-media"]
+  "version": "0.1.0",
+  "description": "Create motion clips for product launches, social media and capability demos: code-driven animation (anime.js, react-spring, PixiJS, p5.js, matter-js, D3, three.js) with Tone.js soundtracks and Blender hero renders, rendered deterministically to MP4/WebM/GIF/ProRes.",
+  "author": {
+    "name": "autom8labs"
+  },
+  "keywords": [
+    "motion-graphics",
+    "video",
+    "animation",
+    "product-launch",
+    "social-media",
+    "3d"
+  ]
 }
