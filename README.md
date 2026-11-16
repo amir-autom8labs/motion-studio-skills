@@ -4,7 +4,7 @@ A Claude Code plugin for producing motion clips — product launch videos, socia
 
 - **`toolkit/`** — `motion`, a headless renderer that turns any JavaScript animation into frame-perfect MP4 / WebM / GIF / ProRes-with-alpha, with Tone.js audio mixed in.
 - **`skills/`** — twelve skills that teach Claude how to plan a clip, pick the right engine per shot, avoid the defects we hit, and review its own work.
-- **`demos/`** — eleven working scenes with rendered output; the skills use them as templates.
+- **`demos/`** — twelve working scenes with rendered output; the skills use them as templates.
 - **`docs/PRIORITIES.md`** — how the 14 candidate packages were ranked and what the demos taught us.
 
 ## Install

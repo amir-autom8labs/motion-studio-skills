@@ -14,6 +14,7 @@ Each folder is one scene exercising one engine. Outputs are in `out/`, contact s
 | 08-alpha-lower-third | anime.js | Transparent overlay composited on the p5 plate | `out/08-overlay-on-plate.mp4` |
 | 09-launch-reel | concat + Tone.js | Five clips, crossfades, one soundtrack | `out/09-launch-reel.mp4` (32 s, has audio) |
 | 10-three-product-spin | three.js | Device mockup with UI on screen, camera dolly, DOM title | `out/10-three-product-spin.mp4` |
+| 12-glb-model | Blender + three.js | A model file cleaned up, then a three.js turntable and a ray-traced still (the path an image-to-3D output takes) | `out/12-glb-model.mp4`, `out/12-glb-model-blender.png` |
 | 11-blender-hero | Blender (bpy, Cycles) | Ray-traced hero still + draft turntable | `out/11-blender-hero.png`, `out/11-blender-turntable-draft.mp4` |
 
 Regenerate everything:
@@ -39,3 +40,5 @@ Blender demo (needs `pip install bpy` in a venv):
 ```bash
 python demos/11-blender-hero/render.py --quality final --frames 18 --out demos/11-blender-hero/out/hero_
 ```
+
+`demos/12-glb-model/model.glb` is the Khronos glTF sample "Water Bottle" (CC0-1.0), processed with `prepare.py`.

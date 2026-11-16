@@ -54,5 +54,5 @@ So on CPU: finished **stills** are cheap, a 3 s final shot (90 frames) is around
 - **Denoising on** (`sc.cycles.use_denoising = True`) is what makes 16–96 samples usable. In animations very low sample counts flicker — don't go below ~64 for final motion.
 - **Principled BSDF input names changed in Blender 4+** (`Emission Color`, `Emission Strength`, `Coat Weight`). If a name fails, print `[i.name for i in node.inputs]`.
 - **Bevel everything**: a `BEVEL` modifier (width ~0.1, 8–10 segments) on hard edges catches highlights; unbevelled boxes look fake.
-- **Importing models**: `bpy.ops.import_scene.gltf(filepath=…)`, `bpy.ops.wm.obj_import(…)`, or open a `.blend` with `bpy.ops.wm.open_mainfile`. Normalise scale and centre from the bounding box before lighting.
+- **Importing models** (template: `demos/12-glb-model/render.py` + `prepare.py`): `bpy.ops.import_scene.gltf(filepath=…)`, `bpy.ops.wm.obj_import(…)`, or open a `.blend` with `bpy.ops.wm.open_mainfile`. Normalise first with `prepare.py`, parent all parts to one empty and rotate that. Imported models are often darker than expected: add a low, large fill light opposite the key.
 - **Screen content**: load a screenshot with `bpy.data.images.load` into an Image Texture node feeding Emission Color.

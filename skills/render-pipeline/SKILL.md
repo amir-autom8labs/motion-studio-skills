@@ -63,7 +63,7 @@ Overlay on footage: render with `--transparent -o overlay.mov`, then
 1. **Hide things up front.** Timeline libraries apply "from" values only when a tween starts. Anything that enters later must start hidden (`opacity:0` in CSS or `utils.set`), or it flashes on screen before its cue. This is the most common defect — check the first sheet frame.
 2. **No real time.** Never read the wall clock for logic, never `await` a real delay after setup. During setup `setTimeout` ≤ 50 ms is real (so loaders work); anything longer is virtual choreography.
 3. **Finish loading inside `scene()`.** `await` fonts, images and engine init before returning. Frames start the moment it resolves.
-4. **Offline by default.** Remote URLs are blocked so a render never depends on a CDN. Import assets (`import logo from './logo.svg'` gives a data URL) or `fetch('./data.json')` from the scene's folder. `--allow-network` opts out.
+4. **Offline by default.** Remote URLs are blocked so a render never depends on a CDN. Import assets (`import logo from './logo.svg'` gives a data URL) or `fetch('./data.json')` from the scene's folder (any file next to the scene is served at `./`). `--allow-network` opts out.
 5. **Fixed-step simulations.** Physics and particles advance by a constant dt per frame, never by measured elapsed time.
 6. **Randomness is seeded.** `Math.random` is seeded per render; use `rng(seed)` from motion-kit when a value must not change if code elsewhere adds a random call.
 7. **Fonts**: only use fonts that are installed or imported as files. Check with `fc-list | grep -i "<name>"`; otherwise bundle a `.woff2` and declare `@font-face` with the imported data URL.

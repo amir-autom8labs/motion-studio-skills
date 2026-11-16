@@ -24,8 +24,8 @@ None of the 14 candidates covers 3D modelling and rendering directly (TRELLIS an
 
 | Package | Role | Measured | Demo |
 |---|---|---|---|
-| **three.js** (MIT) | Everyday 3D: device mockups, turntables, 3D logos, GLB models; runs in the same renderer | ~3 frames/s at 1080p | 10 |
-| **Blender / bpy** (GPL) | Photoreal ray-traced hero stills and short shots | draft frame ~3 s; full-quality 1080p frame ~80 s on CPU | 11 |
+| **three.js** (MIT) | Everyday 3D: device mockups, turntables, 3D logos, GLB models; runs in the same renderer | ~3 frames/s at 1080p | 10, 12 |
+| **Blender / bpy** (GPL) | Photoreal ray-traced hero stills and short shots | draft frame ~3 s; full-quality 1080p frame ~80 s on CPU | 11, 12 |
 
 Blender is GPL: using it to render is unrestricted, but scripts that import `bpy` are GPL if distributed.
 

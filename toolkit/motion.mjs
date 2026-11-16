@@ -100,7 +100,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 function serve(sceneDir, tmpDir) {
   const server = http.createServer((req, res) => {
     const u = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-    if (u === '/__motion/index.html') {
+    if (u === '/__motion.html') {
       res.writeHead(200, { 'content-type': 'text/html' });
       return res.end(`<!doctype html><html><head><meta charset="utf-8"><style>
         html,body{margin:0;padding:0;overflow:hidden;background:transparent}
@@ -114,7 +114,7 @@ function serve(sceneDir, tmpDir) {
     res.writeHead(200, { 'content-type': MIME[path.extname(file)] || 'application/octet-stream' });
     fs.createReadStream(file).pipe(res);
   });
-  return new Promise((r) => server.listen(0, '127.0.0.1', () => r({ server, url: `http://127.0.0.1:${server.address().port}/__motion/index.html` })));
+  return new Promise((r) => server.listen(0, '127.0.0.1', () => r({ server, url: `http://127.0.0.1:${server.address().port}/__motion.html` })));
 }
 
 const warned = new Set();
@@ -185,7 +185,7 @@ async function captureWorker({ playwright, url, ctx, frameList, lastFrame, tmp, 
     if (opts.verbose) page.on('console', (m) => console.error(`  [page] ${m.text()}`));
     page.on('response', (r) => { // missing assets are a warning, not fatal (p5 probes for translation files, for example)
       const k = `${r.status()} ${r.url().replace(/^https?:\/\/127\.0\.0\.1:\d+/, '')}`;
-      if (r.status() >= 400 && !/favicon|\/__motion\/[a-z-]+\.json$/i.test(k) && !warned.has(k)) { warned.add(k); console.error(`  warning: HTTP ${k}`); }
+      if (r.status() >= 400 && !/favicon|\/en-US\.json$/i.test(k) && !warned.has(k)) { warned.add(k); console.error(`  warning: HTTP ${k}`); }
     });
     await offline(page, opts);
     await page.addInitScript(`window.__motionSeed=${opts.seed};`);

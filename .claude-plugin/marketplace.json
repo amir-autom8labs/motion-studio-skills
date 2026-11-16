@@ -9,7 +9,7 @@
       "name": "motion-studio",
       "source": "./",
       "description": "Skills and a headless renderer for producing launch videos, social clips and product demos from code.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }
