@@ -3,9 +3,10 @@
 A Claude Code plugin for producing motion clips — product launch videos, social posts, capability demos — from code. It ships:
 
 - **`toolkit/`** — `motion`, a headless renderer that turns any JavaScript animation into frame-perfect MP4 / WebM / GIF / ProRes-with-alpha, with Tone.js audio mixed in.
-- **`skills/`** — twelve skills that teach Claude how to plan a clip, pick the right engine per shot, avoid the defects we hit, and review its own work.
+- **`skills/`** — thirteen skills that teach Claude how to plan a clip, pick the right engine per shot, avoid the defects we hit, and review its own work.
 - **`demos/`** — twelve working scenes with rendered output; the skills use them as templates.
 - **`docs/PRIORITIES.md`** — how the 14 candidate packages were ranked and what the demos taught us.
+- **`docs/SOURCES.md`** — what version 0.3 took from Impeccable and from a practitioner's motion playbook.
 
 ## Install
 
@@ -29,7 +30,8 @@ npm ci --prefix <plugin-root>/toolkit
 
 | Skill | Use it for |
 |---|---|
-| `motion-director` | Start here: brief → storyboard → engine per shot → build/review/render loop |
+| `motion-director` | Start here: brief → look → storyboard with numbers → engine per shot → build, measure, deliver |
+| `art-direction` | Decide the look from the brand; seven swappable looks; the tells that make video look AI-made |
 | `render-pipeline` | Scene contract, CLI, formats, determinism rules, speed, troubleshooting |
 | `animejs-titles` | Titles, kinetic type, logo reveals, lower thirds |
 | `react-spring-ui` | Product UI walkthroughs on spring physics |
@@ -49,7 +51,11 @@ node toolkit/motion.mjs sheet demos/01-anime-launch-title/scene.js -o sheet.png 
 ```
 
 ```bash
-node toolkit/motion.mjs render demos/01-anime-launch-title/scene.js -o title.mp4 --preset portrait
+node toolkit/motion.mjs render demos/01-anime-launch-title/scene.js -o title.mp4 --preset portrait --set look=bold
+```
+
+```bash
+node toolkit/motion.mjs check title.mp4
 ```
 
 ## Status and limits

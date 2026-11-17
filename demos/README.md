@@ -17,22 +17,16 @@ Each folder is one scene exercising one engine. Outputs are in `out/`, contact s
 | 12-glb-model | Blender + three.js | A model file cleaned up, then a three.js turntable and a ray-traced still (the path an image-to-3D output takes) | `out/12-glb-model.mp4`, `out/12-glb-model-blender.png` |
 | 11-blender-hero | Blender (bpy, Cycles) | Ray-traced hero still + draft turntable | `out/11-blender-hero.png`, `out/11-blender-turntable-draft.mp4` |
 
-Regenerate everything:
+Each scene has a default look and accepts `--set look=editorial|bold|paper|signal|ember|studio|lumen` (see `_shared/looks.js`). Defaults: 01, 04, 06, 08 editorial · 02 paper · 03 ember · 05 bold · 07 signal · 10 studio. The reel renders five scenes in one look (`bold`).
+
+Regenerate everything (about ten minutes on 4 cores):
 
 ```bash
-cd toolkit && npm ci
+npm ci --prefix toolkit
 ```
 
 ```bash
-for s in 01-anime-launch-title/scene.js 02-react-spring-ui/scene.jsx 03-pixi-particles/scene.js 04-p5-generative/scene.js 05-matter-physics/scene.js 06-d3-data-story/scene.js 07-tone-audio-reactive/scene.js; do node toolkit/motion.mjs render demos/$s -o demos/out/$(dirname $s).mp4; done
-```
-
-```bash
-node toolkit/motion.mjs render demos/08-alpha-lower-third/scene.js --transparent -o demos/out/08-alpha-lower-third.mov
-```
-
-```bash
-bash demos/09-launch-reel/build.sh
+bash demos/render-all.sh
 ```
 
 Blender demo (needs `pip install bpy` in a venv):

@@ -1,19 +1,22 @@
 // anime.js — kinetic-typography launch title. Timeline-driven DOM + SVG.
 import { createTimeline, animate, stagger, splitText, svg, utils } from 'animejs';
 import { el, css, unit } from 'motion-kit';
-import { brand, gradient } from '../_shared/brand.js';
+import { useLook, looks } from '../_shared/looks.js';
 
-export const config = { width: 1920, height: 1080, fps: 30, duration: 6, background: brand.bg };
+export const config = { width: 1920, height: 1080, fps: 30, duration: 6, background: looks.editorial.bg };
 
-export default function scene({ root, width, height }) {
+export default async function scene(sceneCtx) {
+  const { root, width, height } = sceneCtx;
+  const brand = await useLook(sceneCtx, 'editorial');
+  const { gradient, palette } = brand;
   const u = unit(width, height);
   css(root, `
     .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
       font-family:${brand.font};color:${brand.text}}
     .blob{position:absolute;border-radius:50%;opacity:.6} /* soft blobs via gradient: a large CSS blur() made this scene render 1.5x slower */
     .pill{font:600 ${u(2.4)}px ${brand.mono};letter-spacing:.32em;color:${brand.b};padding:${u(1)}px ${u(2.2)}px;
-      border:1px solid ${brand.line};border-radius:999px;background:rgba(255,255,255,.03);opacity:0}
-    .word{font-weight:800;font-size:${u(26)}px;line-height:1;letter-spacing:-.045em;margin-top:${u(3)}px;display:flex;align-items:center;gap:${u(3)}px}
+      border:1px solid ${brand.line};border-radius:999px;background:${brand.panel};opacity:0}
+    .word{font-family:${brand.head};font-weight:${brand.hw};font-size:${u(26)}px;line-height:1;letter-spacing:${brand.ht};margin-top:${u(3)}px;display:flex;align-items:center;gap:${u(3)}px}
     .word .grad{background:${gradient};-webkit-background-clip:text;color:transparent;padding:0 .04em .1em}
     .rule{height:${u(.5)}px;width:${u(60)}px;background:${gradient};border-radius:9px;transform:scaleX(0);margin-top:${u(1)}px}
     .tag{font-weight:500;font-size:${u(4.4)}px;color:${brand.dim};margin-top:${u(4)}px;letter-spacing:-.01em}
@@ -23,16 +26,17 @@ export default function scene({ root, width, height }) {
   `);
   const blobA = el('div', { class: 'blob', style: `width:${u(100)}px;height:${u(100)}px;background:radial-gradient(closest-side, ${brand.a}, transparent);left:${width * 0.02}px;top:${height * -0.1}px` }, root);
   const blobB = el('div', { class: 'blob', style: `width:${u(90)}px;height:${u(90)}px;background:radial-gradient(closest-side, ${brand.b}, transparent);left:${width * 0.52}px;top:${height * 0.3}px;opacity:.4` }, root);
+  if (!brand.glow) { blobA.remove(); blobB.remove(); } // soft glow blobs only in looks that allow them
   const stage = el('div', { class: 'stage' }, root);
   const pill = el('div', { class: 'pill' }, stage, 'INTRODUCING');
   const word = el('div', { class: 'word' }, stage);
   const logo = el('svg', { viewBox: '0 0 100 100', width: u(20), height: u(20), fill: 'none' }, word);
   const defs = el('defs', {}, logo);
   const lg = el('linearGradient', { id: 'lg', x1: 0, y1: 0, x2: 1, y2: 1 }, defs);
-  el('stop', { offset: 0, 'stop-color': brand.a }, lg); el('stop', { offset: 1, 'stop-color': brand.b }, lg);
+  el('stop', { offset: 0, 'stop-color': brand.a }, lg); el('stop', { offset: 1, 'stop-color': brand.dark ? brand.b : brand.a }, lg);
   const ring = el('path', { d: 'M50 8 A42 42 0 1 1 49.9 8', stroke: 'url(#lg)', 'stroke-width': 9, 'stroke-linecap': 'round' }, logo);
   const bolt = el('path', { d: 'M56 22 L34 54 H50 L44 78 L68 44 H52 Z', fill: 'url(#lg)', opacity: 0, style: 'transform-origin:50px 50px' }, logo);
-  const name = el('span', {}, word, brand.name);
+  const name = el('span', {}, word, sceneCtx.params.product ?? 'Lumen');
   const ver = el('span', { class: 'grad' }, word, '2.0');
   const rule = el('div', { class: 'rule' }, stage);
   const tag = el('div', { class: 'tag' }, stage);

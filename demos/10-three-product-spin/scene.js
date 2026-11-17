@@ -4,35 +4,37 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { el, css, unit, prog, ease, lerp, rng } from 'motion-kit';
-import { brand, gradient } from '../_shared/brand.js';
+import { useLook, looks } from '../_shared/looks.js';
 
-export const config = { width: 1920, height: 1080, fps: 30, duration: 6, background: brand.bg, workers: 2, seekable: true };
+export const config = { width: 1920, height: 1080, fps: 30, duration: 6, background: looks.studio.bg, workers: 2, seekable: true };
 
 // The screen is a 2D canvas used as a texture: draw any UI you like, or load a screenshot instead.
-function screenTexture() {
+function screenTexture(brand) {
   const c = document.createElement('canvas'); c.width = 900; c.height = 1900;
   const g = c.getContext('2d');
   g.fillStyle = '#0b0c14'; g.fillRect(0, 0, 900, 1900);
-  const hero = g.createLinearGradient(0, 0, 900, 700); hero.addColorStop(0, brand.a); hero.addColorStop(1, brand.b);
+  const hero = g.createLinearGradient(0, 0, 900, 700); hero.addColorStop(0, brand.a); hero.addColorStop(1, brand.dark ? brand.b : brand.a);
   g.fillStyle = hero; g.beginPath(); g.roundRect(50, 150, 800, 620, 56); g.fill();
-  g.fillStyle = '#fff'; g.font = `800 96px 'Inter Display', Inter, sans-serif`; g.fillText('Lumen', 100, 330);
-  g.font = `500 44px Inter, sans-serif`; g.globalAlpha = 0.85; g.fillText('Render queue · 3 active', 100, 410); g.globalAlpha = 1;
+  g.fillStyle = '#fff'; g.font = `${brand.hw} 96px ${brand.head}`; g.fillText('Lumen', 100, 330);
+  g.font = `400 44px ${brand.font}`; g.globalAlpha = 0.85; g.fillText('Render queue · 3 active', 100, 410); g.globalAlpha = 1;
   g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.roundRect(100, 640, 700, 22, 11); g.fill();
   g.fillStyle = '#fff'; g.beginPath(); g.roundRect(100, 640, 470, 22, 11); g.fill();
   [brand.c, brand.b, brand.d, brand.a].forEach((col, i) => {
     const y = 850 + i * 245;
     g.fillStyle = '#161825'; g.beginPath(); g.roundRect(50, y, 800, 205, 44); g.fill();
     g.fillStyle = col; g.beginPath(); g.roundRect(90, y + 42, 120, 120, 30); g.fill();
-    g.fillStyle = '#f4f5fa'; g.font = `650 52px Inter, sans-serif`; g.fillText(['Teaser exported', 'Review requested', 'Captions synced', 'Reel published'][i], 250, y + 95);
-    g.fillStyle = '#8b90a6'; g.font = `500 38px Inter, sans-serif`; g.fillText(['4K · 12 s', '3 comments', '2 languages', '5 platforms'][i], 250, y + 150);
+    g.fillStyle = '#f4f5fa'; g.font = `600 52px ${brand.font}`; g.fillText(['Teaser exported', 'Review requested', 'Captions synced', 'Reel published'][i], 250, y + 95);
+    g.fillStyle = '#8b90a6'; g.font = `400 38px ${brand.font}`; g.fillText(['4K · 12 s', '3 comments', '2 languages', '5 platforms'][i], 250, y + 150);
   });
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   return tex;
 }
 
-export default async function scene({ root, width, height, transparent }) {
+export default async function scene(sceneCtx) {
+  const { root, width, height, transparent } = sceneCtx;
+  const brand = await useLook(sceneCtx, 'studio');
+  const { gradient, palette } = brand;
   const u = unit(width, height), portrait = height > width, rand = rng(5);
-  await document.fonts.load(`800 96px 'Inter Display'`);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: transparent, preserveDrawingBuffer: true });
   renderer.setSize(width, height); renderer.setPixelRatio(window.devicePixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
@@ -51,20 +53,20 @@ export default async function scene({ root, width, height, transparent }) {
   const body = new THREE.Mesh(new RoundedBoxGeometry(2.2, 4.5, 0.22, 10, 0.24),
     new THREE.MeshPhysicalMaterial({ color: '#23263a', metalness: 1, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.1 }));
   body.castShadow = true;
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.04, 4.34), new THREE.MeshBasicMaterial({ map: screenTexture(), toneMapped: false }));
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.04, 4.34), new THREE.MeshBasicMaterial({ map: screenTexture(brand), toneMapped: false }));
   screen.position.z = 0.112;
   const glass = new THREE.Mesh(new THREE.PlaneGeometry(2.04, 4.34), // thin reflective layer so the screen catches highlights
     new THREE.MeshPhysicalMaterial({ color: '#000', metalness: 0, roughness: 0.05, transparent: true, opacity: 0.12, clearcoat: 1 }));
   glass.position.z = 0.114;
   phone.add(body, screen, glass); sc.add(phone);
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: '#0a0b12', roughness: 0.55, metalness: 0, envMapIntensity: 0.15 }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: brand.dark ? '#0a0b12' : brand.bg, roughness: brand.dark ? 0.55 : 0.9, metalness: 0, envMapIntensity: brand.dark ? 0.15 : 0.4 }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -2.7; floor.receiveShadow = true; if (!transparent) sc.add(floor);
 
   const key = new THREE.DirectionalLight('#ffffff', 2.6); key.position.set(4, 7, 6); key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 }); key.shadow.radius = 6;
-  const rimA = new THREE.PointLight(brand.a, 60, 20); rimA.position.set(-4, 3, -2);
-  const rimB = new THREE.PointLight(brand.b, 40, 20); rimB.position.set(5, 2.5, -2);
+  const rimA = new THREE.PointLight(brand.a, brand.dark ? 60 : 14, 20); rimA.position.set(-4, 3, -2);
+  const rimB = new THREE.PointLight(brand.dark ? brand.b : brand.a, brand.dark ? 40 : 10, 20); rimB.position.set(5, 2.5, -2);
   sc.add(key, rimA, rimB);
 
   const orbs = Array.from({ length: 9 }, (_, i) => {
@@ -78,7 +80,7 @@ export default async function scene({ root, width, height, transparent }) {
   css(root, `.cap{position:absolute;${portrait ? `left:0;right:0;top:${u(12)}px;text-align:center` : `left:${u(9)}px;top:50%;transform:translateY(-50%);width:${u(70)}px`};
       font-family:${brand.font};color:${brand.text}}
     .cap .k{font:600 ${u(2.5)}px ${brand.mono};letter-spacing:.28em;color:${brand.b}}
-    .cap .h{font-weight:800;font-size:${u(11)}px;letter-spacing:-.04em;line-height:1.02;margin-top:${u(2.2)}px}
+    .cap .h{font-family:${brand.head};font-weight:${brand.hw};font-size:${u(11) * brand.hs}px;letter-spacing:${brand.ht};line-height:1.02;margin-top:${u(2.2)}px}
     .cap .h span{background:${gradient};-webkit-background-clip:text;color:transparent}
     .cap .s{font-size:${u(3.4)}px;color:${brand.dim};margin-top:${u(2.6)}px;line-height:1.35}`);
   const cap = el('div', { class: 'cap' }, root);

@@ -1,17 +1,20 @@
 // matter-js — feature pills drop, collide and pile up; then the floor opens. Fixed-step simulation
 // (never Matter.Runner) so the result is identical on every render.
 import Matter from 'matter-js';
-import { makeCanvas, rng, unit, el, css, prog, ease } from 'motion-kit';
-import { brand, palette } from '../_shared/brand.js';
+import { makeCanvas, rng, unit, el, css, prog, ease, ink } from 'motion-kit';
+import { useLook, looks } from '../_shared/looks.js';
 
-export const config = { width: 1920, height: 1080, fps: 30, duration: 7, background: brand.bg };
+export const config = { width: 1920, height: 1080, fps: 30, duration: 7, background: looks.bold.bg };
 const LABELS = ['Timelines', 'Springs', 'Particles', 'Physics', 'Charts', 'Audio', '4K', '60 fps', 'Alpha', 'Vertical', 'GIF',
   'Shaders', 'SVG', 'Type', 'Loops', 'Beats', 'Morphs', 'Easing', 'WebGL', 'Canvas', 'React', 'Data', 'Stagger', 'Blur'];
 
-export default function scene({ root, width, height, fps, duration }) {
+export default async function scene(sceneCtx) {
+  const { root, width, height, fps, duration } = sceneCtx;
+  const brand = await useLook(sceneCtx, 'bold');
+  const { gradient, palette } = brand;
   const u = unit(width, height), rand = rng(3);
   const { ctx } = makeCanvas(root, width, height);
-  css(root, `.t{position:absolute;left:0;right:0;top:${u(9)}px;z-index:2;text-align:center;font:800 ${u(9.5)}px ${brand.font};letter-spacing:-.04em;color:${brand.text}}
+  css(root, `.t{position:absolute;left:0;right:0;top:${u(9)}px;z-index:2;text-align:center;font:${brand.hw} ${u(9.5)}px ${brand.head};letter-spacing:${brand.ht};color:${brand.text}}
     .t small{display:block;font:500 ${u(3.6)}px ${brand.font};letter-spacing:0;color:${brand.dim};margin-top:${u(1.5)}px}`);
   const title = el('div', { class: 't' }, root); title.innerHTML = 'Everything, in one pipeline<small>24 capabilities. Zero plugins to babysit.</small>';
 
@@ -21,7 +24,7 @@ export default function scene({ root, width, height, fps, duration }) {
   const floor = wall(width / 2, height + 50, width * 2, 100);
   Composite.add(engine.world, [floor, wall(-50, height / 2, 100, height * 4), wall(width + 50, height / 2, 100, height * 4)]);
 
-  ctx.font = `650 ${u(4.6)}px ${brand.font}`;
+  ctx.font = `600 ${u(4.6)}px ${brand.font}`;
   const pills = LABELS.map((label, i) => {
     const w = ctx.measureText(label).width + u(8), h = u(11);
     const body = Bodies.rectangle(width * (0.12 + rand() * 0.76), -h - rand() * u(10), w, h,
@@ -40,14 +43,14 @@ export default function scene({ root, width, height, fps, duration }) {
     title.style.opacity = prog(t, 0.1, 0.8) * (1 - prog(t, duration - 1.2, 0.6, ease.inCubic));
     title.style.transform = `translateY(${(1 - prog(t, 0.1, 0.9, ease.outExpo)) * u(3)}px)`;
     ctx.clearRect(0, 0, width, height);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `650 ${u(4.6)}px ${brand.font}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `600 ${u(4.6)}px ${brand.font}`;
     for (const p of pills) {
       if (!p.added) continue;
       const { x, y } = p.body.position;
       ctx.save(); ctx.translate(x, y); ctx.rotate(p.body.angle);
       ctx.beginPath(); ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, p.h / 2);
-      if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); ctx.fillStyle = brand.bg; }
-      else { ctx.fillStyle = brand.panel; ctx.fill(); ctx.lineWidth = u(0.35); ctx.strokeStyle = p.color; ctx.stroke(); ctx.fillStyle = brand.text; }
+      if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); if (!brand.dark) { ctx.lineWidth = u(0.35); ctx.strokeStyle = brand.text; ctx.stroke(); } ctx.fillStyle = ink(p.color); }
+      else { ctx.fillStyle = brand.panel; ctx.fill(); ctx.lineWidth = u(0.35); ctx.strokeStyle = brand.dark ? p.color : brand.text; ctx.stroke(); ctx.fillStyle = brand.text; }
       if (Math.cos(p.body.angle) < 0) ctx.rotate(Math.PI); // keep labels the right way up
       ctx.fillText(p.label, 0, u(0.3));
       ctx.restore();

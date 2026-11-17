@@ -12,6 +12,7 @@ MOTION="node ${CLAUDE_PLUGIN_ROOT}/toolkit/motion.mjs"
 $MOTION doctor                       # first run: checks deps, browser, ffmpeg and prints the fix
 $MOTION sheet  scene.js -o sheet.png --count 8        # contact sheet — look at it before rendering
 $MOTION render scene.js -o out.mp4                     # final
+$MOTION check  out.mp4                                 # measure it: freezes, motion per second, loudness
 ```
 
 If `doctor` reports missing packages run `npm ci --prefix ${CLAUDE_PLUGIN_ROOT}/toolkit`. Scene files can live anywhere (put them in the user's project); bare imports of `animejs`, `pixi.js`, `p5`, `matter-js`, `d3`, `tone`, `three`, `react`, `@react-spring/web` and `motion-kit` resolve to the toolkit's copies.
@@ -36,7 +37,7 @@ export const audio = (ctx) => /* optional: return an AudioBuffer, see tonejs-sou
 - Two ways to animate, mix freely: **(a)** start any library that uses `requestAnimationFrame` / `setTimeout` / `performance.now` / CSS animations — the virtual clock drives them; **(b)** return a per-frame function and compute state from `t`.
 - `config` optional keys: `seed` (Math.random seed), `workers`, `seekable`, `params` (defaults for `--set`).
 - `--set key=value` arrives as `params.key`: use it for copy, colours and variants instead of duplicating scenes.
-- `motion-kit` exports `unit, el, css, makeCanvas, ease, prog, clamp, lerp, map, rng`. `prog(t, start, dur, ease.outCubic)` gives an eased 0→1 for a time window and is the simplest way to choreograph inside a per-frame function.
+- `motion-kit` exports `unit, el, css, makeCanvas, ease, prog, spring, clamp, lerp, map, rng, loadFonts, rgba, ink, hexInt`. `spring(t - start, { damping: 0.8, omega: 18 })` is a closed-form spring (0→1): the same landing whichever frame is drawn first. `prog(t, start, dur, ease.outCubic)` gives an eased 0→1 for a time window and is the simplest way to choreograph inside a per-frame function.
 
 ## CLI
 
@@ -51,12 +52,31 @@ render <scene> -o out.{mp4|webm|mov|gif|wav} | outdir/
   --set k=v            scene params             --verbose   (page console)
 sheet <scene> -o sheet.png [--at 0.5,2,4 | --count 8] [--cols 4]
 concat a.mp4 b.mp4 … -o out.mp4 [--xfade 0.4] [--transition fade|wipeleft|slideup|…] [--audio track.wav]
+check out.mp4 [--loop]        freezes ≥ 0.5 s, motion per second, loop seam, loudness of the encoded file
+check scene.js                same frame from two runs must match; seekable scenes: cold frame = frame reached in sequence
+global: --gpu  use the machine's GPU instead of software rendering (untested here; much faster WebGL where a GPU exists)
+        --no-loudnorm  keep the soundtrack's own level (default normalises to −14 LUFS, true peak −2 dBTP)
 ```
 
 Aspect variants: render the same scene once per preset. Scenes sized with `u()` and flex layout adapt; branch on `height > width` only where the composition must change (stack instead of side by side).
 
 Overlay on footage: render with `--transparent -o overlay.mov`, then
 `ffmpeg -i plate.mp4 -i overlay.mov -filter_complex "[0][1]overlay=shortest=1" -c:v libx264 -crf 18 -pix_fmt yuv420p out.mp4`.
+
+## Review with measurements, not only stills
+
+A contact sheet shows layout; it cannot show that a clip is frozen, that a move never happened, or that a loop stutters. After every render run `motion check out.mp4` and read it:
+
+```
+motion/s  ▇▂▇████▆   (peak 2.55 …)      each planned move should show as a bump; a flat stretch is a hold or a bug
+freezes   10.17-11.40 s                 confirm each one is an intended hold
+loop seam 0.41 vs typical step 0.38     with --loop: the jump from last frame to first must look like any other step
+loudness  -14.2 LUFS, true peak -2.1    measured on the encoded file
+```
+
+Loops: the renderer draws frames 0 to N−1 and never frame N, so a scene whose state at `duration` equals its state at 0 loops without a doubled frame. Match position *and* velocity at the seam.
+
+Before relying on `seekable: true`, run `motion check scene.js`: it renders the same frames cold and in sequence and reports any difference.
 
 ## Rules that prevent broken renders
 

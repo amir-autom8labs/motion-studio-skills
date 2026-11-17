@@ -61,3 +61,32 @@ export const css = (root, text) => el('style', {}, root, text);
 
 // Unit that scales with the frame: u(1) = 1% of the shorter side. Keeps layouts aspect-agnostic.
 export const unit = (width, height) => (n) => (Math.min(width, height) / 100) * n;
+
+// Closed-form spring: position at time t (seconds) after release, settling 0 -> 1. No state between
+// frames, so any frame renders alone and lands identically every time.
+//   damping 1.0 = no overshoot (text, UI)   0.8 = one small bounce (products, cards)   0.5 = two bounces (characters)
+//   omega = speed in rad/s (12 slow, 18 normal, 26 snappy)
+export const spring = (t, { damping = 0.8, omega = 18 } = {}) => {
+  if (t <= 0) return 0;
+  const z = damping, w = omega;
+  if (z < 1) { const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + ((z * w) / wd) * Math.sin(wd * t)); }
+  if (z === 1) return 1 - Math.exp(-w * t) * (1 + w * t);
+  const s = Math.sqrt(z * z - 1), r1 = -w * (z - s), r2 = -w * (z + s);
+  return 1 - (r2 * Math.exp(r1 * t) - r1 * Math.exp(r2 * t)) / (r2 - r1);
+};
+
+// Register bundled font files and wait until they are usable (DOM and canvas).
+//   import file from '@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff2';
+//   await loadFonts([{ family: 'Archivo Black', src: file, weight: 400 }]);
+export const loadFonts = async (fonts) => {
+  await Promise.all(fonts.map(async ({ family, src, weight = 400, style = 'normal' }) => {
+    const f = new FontFace(family, `url(${src})`, { weight: String(weight), style });
+    document.fonts.add(await f.load());
+  }));
+};
+
+// Colour helpers. rgba('#ff5a1f', 0.4) -> 'rgba(255,90,31,0.4)'; ink(bg) -> readable text colour on that fill.
+const rgb = (hex) => { const h = hex.replace('#', ''); const n = parseInt(h.length === 3 ? [...h].map((c) => c + c).join('') : h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+export const rgba = (hex, a = 1) => `rgba(${rgb(hex).join(',')},${a})`;
+export const hexInt = (hex) => { const [r, g, b] = rgb(hex); return (r << 16) | (g << 8) | b; };
+export const ink = (hex, dark = '#0b0b0b', light = '#ffffff') => { const [r, g, b] = rgb(hex); return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? dark : light; };

@@ -35,6 +35,7 @@ export default function scene({ root, width, height }) {
 - **Not seekable.** Springs integrate frame to frame — never set `seekable: true`.
 - **Spring feel**: `{ tension, friction, mass }`. Snappy UI 210/20. Soft settle 170/26 (`presets.default`). Bouncy toggle 180/12 (`presets.wobbly`). Hard pop for likes/badges 380/9, mass 0.8. Slow progress fill 40/16. Lower friction = more overshoot; overshoot on layout size (height) reads as jelly, so keep friction ≥ 14 there.
 - **Interpolate, don't re-render**: `spring.to(v => …)` for colours, widths, shadows. Clamp overshoot where a value must stay in range (`Math.max(0, Math.min(1, v))` for opacity/colour mixes).
+- **Or skip the library**: `spring(t - cue, { damping, omega })` from motion-kit is a closed-form spring — pick the feel by damping ratio (1.0 no overshoot for text and UI, 0.8 one small bounce for cards and products, 0.5 two bounces for playful elements). A scene built on it is a pure function of time, so it can be `seekable` and ports to seek-based renderers such as HyperFrames; react-spring scenes cannot.
 - **Give springs time to settle** — about 1 s between steps; a step every 400 ms looks frantic.
 - **Scale for video**: a UI that looks right at web sizes is far too small on screen. Multiply your unit by ~1.3 and let the UI panel fill 40–50% of the frame. Show 3–4 components, not a whole app.
 - **Real components**: you can import the user's own React components if they have no network/data dependencies; stub data as props. Inline styles or a `<style>` tag — no CSS-modules pipeline.

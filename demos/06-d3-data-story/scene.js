@@ -2,19 +2,22 @@
 // the headline number counts up. Uses plain d3 transitions (d3-timer runs on the virtual clock).
 import * as d3 from 'd3';
 import { unit, el, css } from 'motion-kit';
-import { brand, gradient } from '../_shared/brand.js';
+import { useLook, looks } from '../_shared/looks.js';
 
-export const config = { width: 1920, height: 1080, fps: 30, duration: 7, background: brand.bg };
+export const config = { width: 1920, height: 1080, fps: 30, duration: 7, background: looks.editorial.bg };
 const DATA = [48, 46, 47, 41, 38, 39, 31, 24, 19, 13, 9, 6].map((v, i) => ({ v, label: `v1.${i}` }));
 DATA[11].label = 'v2.0';
 
-export default function scene({ root, width, height }) {
+export default async function scene(sceneCtx) {
+  const { root, width, height } = sceneCtx;
+  const brand = await useLook(sceneCtx, 'editorial');
+  const { gradient, palette } = brand;
   const u = unit(width, height), portrait = height > width;
   css(root, `.hd{position:absolute;left:${u(9)}px;top:${u(8)}px;font-family:${brand.font};color:${brand.text}}
     .k{font:600 ${u(2.5)}px ${brand.mono};letter-spacing:.28em;color:${brand.b}}
-    .h{font-weight:800;font-size:${u(7.6)}px;letter-spacing:-.035em;margin-top:${u(1.6)}px}
+    .h{font-family:${brand.head};font-weight:${brand.hw};font-size:${u(8.4) * brand.hs}px;letter-spacing:${brand.ht};max-width:${width * (portrait ? 0.84 : 0.6)}px;margin-top:${u(1.6)}px}
     .big{position:absolute;right:${u(9)}px;top:${u(6)}px;text-align:right;font-family:${brand.font}}
-    .big .n{font-weight:800;font-size:${u(17)}px;letter-spacing:-.05em;line-height:1;background:${gradient};-webkit-background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
+    .big .n{font-family:${brand.head};font-weight:${brand.hw};font-size:${u(17)}px;letter-spacing:${brand.ht};line-height:1;background:${gradient};-webkit-background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
     .big .s{font-size:${u(3.3)}px;color:${brand.dim};margin-top:${u(.6)}px}
     text{font-family:${brand.font};fill:${brand.dim};font-size:${u(2.7)}px}`);
   const hd = d3.select(root).append('div').attr('class', 'hd').style('opacity', 0);
@@ -59,9 +62,9 @@ export default function scene({ root, width, height }) {
   const last = DATA[DATA.length - 1];
   const note = svg.append('g').attr('transform', `translate(${x(last.label)},${y(last.v)})`).style('opacity', 0);
   note.append('circle').attr('r', u(3.2)).attr('fill', 'none').attr('stroke', brand.b).attr('stroke-width', u(0.3));
-  const ny = portrait ? u(46) : u(11), nx = portrait ? -u(2) : u(9); // portrait: the line is steeper, lift the label clear of it
+  const ny = portrait ? u(46) : u(15), nx = portrait ? -u(2) : u(9); // portrait: the line is steeper, lift the label clear of it
   note.append('line').attr('x1', portrait ? 0 : -u(2.6)).attr('y1', portrait ? -u(3.4) : -u(2.6)).attr('x2', -nx).attr('y2', -ny).attr('stroke', brand.b).attr('stroke-width', u(0.3));
-  note.append('text').attr('x', -nx - u(1)).attr('y', -ny - u(4.4)).attr('text-anchor', 'end').style('fill', brand.text).style('font-size', `${u(3.4)}px`).style('font-weight', 700).text('6 s per render');
+  note.append('text').attr('x', -nx - u(1)).attr('y', -ny - u(4.4)).attr('text-anchor', 'end').style('fill', brand.text).style('font-size', `${u(3.4)}px`).style('font-weight', 600).text('6 s per render');
   note.append('text').attr('x', -nx - u(1)).attr('y', -ny - u(0.8)).attr('text-anchor', 'end').text('GPU pipeline ships in v2.0');
 
   // choreography

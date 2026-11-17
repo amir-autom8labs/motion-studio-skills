@@ -1,16 +1,19 @@
 // Tone.js — the soundtrack is composed in code and rendered offline; the renderer hands the
 // per-frame loudness back to the scene (ctx.audio.level / .bass) so the visuals react to it.
-import { makeCanvas, unit, ease, clamp } from 'motion-kit';
-import { brand } from '../_shared/brand.js';
+import { makeCanvas, unit, ease, clamp, rgba } from 'motion-kit';
+import { useLook, looks } from '../_shared/looks.js';
 import { score, BAR, BEAT } from '../_shared/music.js';
 
 // seekable: every frame is a pure function of (t, audio), so workers can skip straight to their frames.
-export const config = { width: 1920, height: 1080, fps: 30, duration: 8, background: brand.bg, seekable: true };
+export const config = { width: 1920, height: 1080, fps: 30, duration: 8, background: looks.signal.bg, seekable: true };
 export const audio = (ctx) => score(ctx);
 
 const WORDS = ['Compose.', 'Sync.', 'Render.', 'Ship.'];
 
-export default function scene({ root, width, height, fps, audio }) {
+export default async function scene(sceneCtx) {
+  const { root, width, height, fps, audio } = sceneCtx;
+  const brand = await useLook(sceneCtx, 'signal');
+  const { gradient, palette } = brand;
   const u = unit(width, height);
   const { ctx } = makeCanvas(root, width, height);
   const cx = width / 2, cy = height / 2, BARS = 96;
@@ -24,7 +27,7 @@ export default function scene({ root, width, height, fps, audio }) {
     // glow that breathes with the bass
     const R = u(25) * (1 + smooth * 0.2);
     const g = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 2.6);
-    g.addColorStop(0, `rgba(124,92,255,${0.25 + smooth * 0.4})`); g.addColorStop(1, 'rgba(124,92,255,0)');
+    g.addColorStop(0, rgba(brand.a, 0.10 + smooth * 0.22)); g.addColorStop(1, rgba(brand.a, 0));
     ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
 
     // radial bars: each bar shows the level from a few frames ago, so energy ripples around the ring
@@ -35,13 +38,13 @@ export default function scene({ root, width, height, fps, audio }) {
       const wob = 0.6 + 0.4 * Math.sin(i * 1.7 + t * 3);
       const len = u(1) + v * wob * u(20);
       const a = (i / BARS) * Math.PI * 2 - Math.PI / 2;
-      ctx.strokeStyle = `hsl(${250 - (k / (BARS / 2)) * 65} 90% ${58 + v * 20}%)`;
+      ctx.strokeStyle = rgba(i % 4 === 0 ? brand.c : brand.a, 0.45 + 0.55 * v);
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(a) * (R + u(1.5)), cy + Math.sin(a) * (R + u(1.5)));
       ctx.lineTo(cx + Math.cos(a) * (R + u(1.5) + len), cy + Math.sin(a) * (R + u(1.5) + len));
       ctx.stroke();
     }
-    ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = u(0.2);
+    ctx.strokeStyle = brand.line; ctx.lineWidth = u(0.2);
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
 
     // one word per bar, punched in on the downbeat
@@ -50,14 +53,14 @@ export default function scene({ root, width, height, fps, audio }) {
     ctx.save(); ctx.translate(cx, cy); ctx.scale(0.7 + 0.3 * pin + smooth * 0.03, 0.7 + 0.3 * pin + smooth * 0.03);
     ctx.globalAlpha = clamp(local / 0.15) * (bar === WORDS.length - 1 ? 1 : 1 - pout);
     ctx.fillStyle = brand.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `800 ${u(9)}px ${brand.font}`; ctx.fillText(WORDS[bar], 0, 0);
+    ctx.font = `${brand.hw} ${u(9)}px ${brand.head}`; ctx.fillText(WORDS[bar], 0, 0);
     ctx.restore();
 
     // beat ticks along the bottom
     const beats = Math.round((config.duration / BEAT));
     for (let b = 0; b < beats; b++) {
       const on = t >= b * BEAT, hit = clamp(1 - (t - b * BEAT) / 0.25);
-      ctx.fillStyle = on ? (b % 4 === 0 ? brand.b : brand.text) : 'rgba(255,255,255,.15)';
+      ctx.fillStyle = on ? (b % 4 === 0 ? brand.b : brand.text) : brand.line;
       const w = u(1.1) * (1 + (on ? hit : 0) * 0.9);
       ctx.beginPath(); ctx.arc(cx + (b - (beats - 1) / 2) * u(3.4), height - u(8), w / 2, 0, Math.PI * 2); ctx.fill();
     }

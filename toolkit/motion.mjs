@@ -3,6 +3,7 @@
 //   motion render <scene.js> -o out.mp4 [options]
 //   motion sheet  <scene.js> -o sheet.png [--at 0.5,2,4 | --count 8]
 //   motion concat a.mp4 b.mp4 ... -o out.mp4 [--xfade 0.4] [--audio track.wav]
+//   motion check  out.mp4 | scene.js
 //   motion doctor
 import { createRequire } from 'node:module';
 import { spawn, spawnSync } from 'node:child_process';
@@ -38,7 +39,11 @@ const HELP = `motion — render JS animation scenes to video
       output type by extension: .mp4 .webm .mov .gif, or a directory/ for a PNG sequence
   motion sheet <scene.js> -o sheet.png [--at 0.5,2,4 | --count 8] [--cols 4]   contact sheet for review
   motion concat a.mp4 b.mp4 -o out.mp4 [--xfade 0.4] [--audio track.wav]
+  motion check out.mp4 [--loop]     measure the finished file: freezes, motion per second, loop seam, loudness
+  motion check scene.js             determinism: same frame twice, and (seekable scenes) cold vs in sequence
   motion doctor           check node deps, browser, ffmpeg
+  global: --gpu           use the real GPU instead of software rendering (faster WebGL; needs a GPU)
+          --no-loudnorm   keep the soundtrack's own level instead of normalising to -14 LUFS
 `;
 
 function parseArgs(argv) {
@@ -122,8 +127,15 @@ const warned = new Set();
 // never hang on (or silently depend on) a CDN. Pass --allow-network to opt out.
 const offline = (page, opts) => opts.network ? null
   : page.route((u) => !/^(127\.0\.0\.1|localhost)$/.test(u.hostname) && /^https?:$/.test(u.protocol), (r) => r.abort());
-const CHROME_ARGS = ['--disable-accelerated-2d-canvas', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl',
-  '--disable-lcd-text', '--font-render-hinting=none', '--autoplay-policy=no-user-gesture-required', '--force-color-profile=srgb'];
+// Default: software rendering, which works on any machine and gives identical pixels everywhere.
+// --gpu (or MOTION_GPU=1) uses the machine's real GPU: much faster for WebGL/three.js, but pixels can differ slightly between machines.
+const GPU = process.argv.includes('--gpu') || process.env.MOTION_GPU === '1';
+const CHROME_ARGS = [
+  ...(GPU ? ['--enable-gpu', '--ignore-gpu-blocklist', ...(process.platform === 'darwin' ? ['--use-angle=metal'] : process.platform === 'win32' ? ['--use-angle=d3d11'] : [])]
+    : ['--disable-accelerated-2d-canvas', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']),
+  '--enable-webgl', '--disable-lcd-text', '--font-render-hinting=none', '--autoplay-policy=no-user-gesture-required', '--force-color-profile=srgb'];
+// Delivery loudness for social platforms: -14 LUFS integrated, true peak at or below -2 dBTP.
+const loud = (args) => (args.loudnorm === false ? [] : ['-af', 'loudnorm=I=-14:TP=-2:LRA=11', '-ar', '48000']);
 
 // Per-frame loudness envelope so visuals can react to the soundtrack deterministically.
 function analyseAudio(wavPath, fps, frames) {
@@ -317,10 +329,10 @@ async function cmdRender(args) {
         ...(wav ? ['-c:a', 'pcm_s16le', '-shortest'] : []), out]);
     } else if (ext === '.webm') {
       ff([...input, ...aIn, '-c:v', 'libvpx-vp9', '-pix_fmt', opts.transparent ? 'yuva420p' : 'yuv420p', '-crf', String(opts.crf + 8), '-b:v', '0',
-        '-row-mt', '1', ...(wav ? ['-c:a', 'libopus', '-b:a', '160k', '-shortest'] : []), out]);
+        '-row-mt', '1', ...(wav ? [...loud(args), '-c:a', 'libopus', '-b:a', '160k', '-shortest'] : []), out]);
     } else {
       ff([...input, ...aIn, '-vf', `${TO709},format=yuv420p`, '-c:v', 'libx264', '-preset', 'slow', '-crf', String(opts.crf), ...COLOR,
-        '-movflags', '+faststart', ...(wav ? ['-c:a', 'aac', '-b:a', '192k', '-shortest'] : []), out]);
+        '-movflags', '+faststart', ...(wav ? [...loud(args), '-c:a', 'aac', '-b:a', '192k', '-shortest'] : []), out]);
     }
     if (wav && args['keep-audio']) fs.copyFileSync(wav, out.replace(/\.[^.]+$/, '') + '.wav');
     const size = ext ? `${(fs.statSync(out).size / 1e6).toFixed(2)} MB` : 'sequence';
@@ -383,11 +395,84 @@ function cmdConcat(args) {
   }
   const total = info.reduce((s, i) => s + i.duration, 0) - x * (files.length - 1);
   const maps = ['-map', `[${vLast}]`];
-  if (ext) { inputs.push('-i', ext); fc += `;[${files.length}:a]afade=t=out:st=${Math.max(0, total - 0.8).toFixed(2)}:d=0.8[aout]`; maps.push('-map', '[aout]'); }
+  if (ext) { inputs.push('-i', ext); fc += `;[${files.length}:a]${args.loudnorm === false ? '' : 'loudnorm=I=-14:TP=-2:LRA=11,aresample=48000,'}afade=t=out:st=${Math.max(0, total - 0.8).toFixed(2)}:d=0.8[aout]`; maps.push('-map', '[aout]'); }
   else if (keepClipAudio) maps.push('-map', `[${aLast}]`);
   ff([...inputs, '-filter_complex', fc, ...maps, '-c:v', 'libx264', '-preset', 'slow', '-crf', String(args.crf || 16), ...COLOR,
     '-movflags', '+faststart', ...(maps.length > 2 ? ['-c:a', 'aac', '-b:a', '192k'] : []), '-t', total.toFixed(3), out]);
   console.error(`motion: wrote ${out}  (${total.toFixed(2)}s, ${(fs.statSync(out).size / 1e6).toFixed(2)} MB)`);
+}
+
+// ---- check: stills cannot show motion, so measure it ----
+function checkVideo(file, args) {
+  const info = probe(file);
+  const fps = info.fps, W = 160, H = 90;
+  console.log(`${path.basename(file)}  ${info.width}x${info.height}  ${fps.toFixed(2)} fps  ${info.duration.toFixed(2)} s`);
+  let bad = 0;
+  // 1. motion: mean absolute change between consecutive frames (0-255 scale), on a small grey copy
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-vf', `scale=${W}:${H},format=gray`, '-f', 'rawvideo', '-'], { maxBuffer: 1 << 30 });
+  if (r.status !== 0) die('could not decode video');
+  const n = Math.floor(r.stdout.length / (W * H)), step = [];
+  for (let f = 1; f < n; f++) { let d = 0; const a = (f - 1) * W * H, b = f * W * H; for (let i = 0; i < W * H; i++) d += Math.abs(r.stdout[b + i] - r.stdout[a + i]); step.push(d / (W * H)); }
+  const perSec = [];
+  for (let sec = 0; sec * fps < step.length; sec++) { const seg = step.slice(Math.round(sec * fps), Math.round((sec + 1) * fps)); perSec.push(seg.reduce((x, y) => x + y, 0) / Math.max(1, seg.length)); }
+  const top = Math.max(0.001, ...perSec), bars = ' ▁▂▃▄▅▆▇█';
+  console.log(`motion/s  ${perSec.map((v) => bars[Math.min(8, Math.round((v / top) * 8))]).join('')}   (peak ${top.toFixed(2)}, per-second mean change on a 0-255 scale)`);
+  console.log(`          ${perSec.map((v) => v.toFixed(2)).join(' ')}`);
+  // 2. freezes: runs of identical frames lasting 0.5 s or more
+  const minRun = Math.round(fps * +(args['min-freeze'] || 0.5)), freezes = [];
+  let run = 0;
+  for (let i = 0; i <= step.length; i++) {
+    if (i < step.length && step[i] < 0.02) run++;
+    else { if (run >= minRun) freezes.push([(i - run) / fps, i / fps]); run = 0; }
+  }
+  if (freezes.length) { console.log(`freezes   ${freezes.map(([a, b]) => `${a.toFixed(2)}-${b.toFixed(2)} s`).join(', ')}   <- confirm each is an intended hold`); }
+  else console.log('freezes   none of 0.5 s or longer');
+  const frozenShare = freezes.reduce((x, [a, b]) => x + b - a, 0) / info.duration;
+  if (frozenShare > 0.5) { console.log(`FAIL      ${(frozenShare * 100).toFixed(0)}% of the clip is frozen`); bad++; }
+  // 3. loop seam: the jump from the last frame back to the first should look like any other frame step
+  if (args.loop) {
+    let d = 0; const a = (n - 1) * W * H; for (let i = 0; i < W * H; i++) d += Math.abs(r.stdout[i] - r.stdout[a + i]); d /= W * H;
+    const sorted = [...step].sort((x, y) => x - y), med = sorted[sorted.length >> 1], p95 = sorted[Math.floor(sorted.length * 0.95)];
+    const ok = d <= Math.max(p95 * 1.5, med * 3, 0.3);
+    console.log(`loop seam ${d.toFixed(2)} vs typical step ${med.toFixed(2)} (95th pct ${p95.toFixed(2)})   ${ok ? 'ok' : 'FAIL: visible jump at the loop point'}`); if (!ok) bad++;
+  }
+  // 4. loudness of the encoded file (measure after encoding: AAC raises peaks)
+  if (info.hasAudio) {
+    const e = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-af', 'ebur128=peak=true', '-f', 'null', '-'], { encoding: 'utf8', maxBuffer: 1 << 28 });
+    const sum = e.stderr.slice(e.stderr.lastIndexOf('Summary:'));
+    const I = +(sum.match(/I:\s*(-?[\d.]+) LUFS/) || [])[1], TP = +(sum.match(/Peak:\s*(-?[\d.]+) dBFS/) || [])[1];
+    const ok = I >= -16 && I <= -12 && TP <= -1;
+    console.log(`loudness  ${I} LUFS integrated, true peak ${TP} dBTP   ${ok ? 'ok' : 'CHECK: target -14 LUFS, peak at or below -2 dBTP (-1 tolerated)'}`);
+  } else console.log('loudness  no audio track');
+  process.exit(bad ? 1 : 0);
+}
+
+async function checkScene(args) {
+  const job = await prepare(args);
+  const { cfg, tmp } = job; job.opts.lossless = true; job.workers = 1;
+  try {
+    const total = Math.round(cfg.duration * cfg.fps);
+    const frames = [0.25, 0.5, 0.75].map((k) => Math.round(total * k));
+    const shoot = async (seekable) => {
+      job.opts.seekable = seekable; await capture(job, frames);
+      return frames.map((f) => { const p = path.join(tmp, `f_${String(f).padStart(6, '0')}.png`); const b = fs.readFileSync(p); fs.rmSync(p); return b; });
+    };
+    const same = (a, b) => frames.map((f, i) => `${(f / cfg.fps).toFixed(2)}s ${a[i].equals(b[i]) ? 'identical' : 'DIFFERENT'}`).join(', ');
+    const seq1 = await shoot(false), seq2 = await shoot(false);
+    let bad = seq1.some((b, i) => !b.equals(seq2[i]));
+    console.log(`repeat    two full runs: ${same(seq1, seq2)}`);
+    if (cfg.seekable) {
+      const cold = await shoot(true); const diff = seq1.some((b, i) => !b.equals(cold[i])); bad ||= diff;
+      console.log(`seek      cold vs in sequence: ${same(seq1, cold)}${diff ? '   <- scene carries state between frames; remove seekable or make it a pure function of t' : ''}`);
+    } else console.log('seek      skipped (scene is not marked seekable)');
+    process.exitCode = bad ? 1 : 0;
+  } finally { job.server.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+
+async function cmdCheck(args) {
+  const f = path.resolve(args._[1] || die('file required'));
+  if (!fs.existsSync(f)) die(`no such file: ${f}`);
+  return /\.(mp4|mov|webm|mkv|gif)$/i.test(f) ? checkVideo(f, args) : checkScene(args);
 }
 
 async function cmdDoctor() {
@@ -407,4 +492,4 @@ async function cmdDoctor() {
 const args = parseArgs(process.argv.slice(2));
 const cmd = args._[0];
 if (!cmd || args.help) { console.log(HELP); process.exit(0); }
-({ render: cmdRender, sheet: cmdSheet, concat: cmdConcat, doctor: cmdDoctor }[cmd] || (() => die(`unknown command ${cmd}\n${HELP}`)))(args);
+({ render: cmdRender, sheet: cmdSheet, concat: cmdConcat, check: cmdCheck, doctor: cmdDoctor }[cmd] || (() => die(`unknown command ${cmd}\n${HELP}`)))(args);

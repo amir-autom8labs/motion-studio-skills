@@ -1,22 +1,25 @@
 // p5.js — generative flow-field plate. Trails accumulate on the canvas (stateful), so we drive
 // p5 with noLoop() + redraw() once per captured frame.
 import p5 from 'p5';
-import { brand, palette } from '../_shared/brand.js';
+import { useLook, looks } from '../_shared/looks.js';
 
-export const config = { width: 1920, height: 1080, fps: 30, duration: 8, background: brand.bg, crf: 26, seed: 11 };
+export const config = { width: 1920, height: 1080, fps: 30, duration: 8, background: looks.editorial.bg, crf: 26, seed: 11 };
 
-export default function scene({ root, width, height, params }) {
+export default async function scene(sceneCtx) {
+  const { root, width, height, params } = sceneCtx;
+  const brand = await useLook(sceneCtx, 'editorial');
+  const { gradient, palette } = brand;
   const COUNT = params.count ?? 3600;
   p5.disableFriendlyErrors = true; // FES would otherwise fetch translation files at runtime
   return new Promise((resolve) => {
     new p5((p) => {
-      let pts = [];
+      let pts = [], fade;
       const GROUPS = palette.flatMap((color) => [{ color, w: 1.2 }, { color, w: 2.6 }]);
       const spawn = () => ({ x: p.random(width), y: p.random(height), g: Math.floor(p.random(GROUPS.length)), life: p.random(40, 220) });
       p.setup = () => {
         p.createCanvas(width, height);
         p.randomSeed(11); p.noiseSeed(11);
-        p.background(brand.bg);
+        p.background(brand.bg); fade = p.color(brand.bg);
         pts = Array.from({ length: COUNT }, spawn);
         p.noLoop();
         resolve(() => p.redraw());
@@ -24,8 +27,8 @@ export default function scene({ root, width, height, params }) {
       p.draw = () => {
         const t = p.frameCount / 30, g = p.drawingContext;
         p.blendMode(p.BLEND);
-        p.noStroke(); p.fill(7, 8, 13, 14); p.rect(0, 0, width, height); // slow fade = long trails
-        p.blendMode(p.ADD);
+        p.noStroke(); fade.setAlpha(14); p.fill(fade); p.rect(0, 0, width, height); // slow fade = long trails
+        p.blendMode(brand.dark ? p.ADD : p.BLEND); // light on dark adds up; ink on paper just overlaps
         const scale = 0.0016, cx = width / 2, cy = height / 2;
         // Hot loop: p5 for noise/random, raw canvas paths for drawing. One stroke() per colour group
         // instead of one per segment is ~20x faster than p.stroke()+p.line() per particle.
@@ -41,7 +44,7 @@ export default function scene({ root, width, height, params }) {
             if (--q.life < 0 || nx < 0 || ny < 0 || nx > width || ny > height) Object.assign(q, spawn());
           }
         }
-        g.globalAlpha = 0.42; g.lineCap = 'round';
+        g.globalAlpha = brand.dark ? 0.42 : 0.5; g.lineCap = 'round';
         GROUPS.forEach((grp, i) => { g.strokeStyle = grp.color; g.lineWidth = grp.w; g.stroke(paths[i]); });
         g.globalAlpha = 1;
       };
